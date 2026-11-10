@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Defs_to_be" targetNamespace="http://niagara.example/pa">
+  <bpmn:collaboration id="Collab_to_be">
+    <bpmn:participant id="Pool_to_be" name="Autorización previa (TO_BE)" processRef="Proc_to_be" />
+  </bpmn:collaboration>
+  <bpmn:process id="Proc_to_be" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="L_med" name="Médico (dentro de la HCE)">
+        <bpmn:flowNodeRef>S</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>M1</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="L_plat" name="Plataforma PA (automatización + IA)">
+        <bpmn:flowNodeRef>B1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B4</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B5</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B6</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G4</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B7</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B8</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B9</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="L_coord" name="Gestor clínico PA (excepciones)">
+        <bpmn:flowNodeRef>C1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>C2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>C3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>C4</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E2</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="L_pag" name="Pagador (API / RPA)">
+        <bpmn:flowNodeRef>P1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>P2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G5</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="L_pac" name="Paciente">
+        <bpmn:flowNodeRef>N1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E1</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="S" name="Orden creada en la HCE">
+      <bpmn:outgoing>Flow_0</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="B1" name="Capturar orden (API / OCR de fax) y normalizar">
+      <bpmn:incoming>Flow_0</bpmn:incoming>
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="B2" name="Verificar elegibilidad y regla PA (pagador + CUPS)">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="G1" name="¿Requiere PA?">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="B3" name="Extraer evidencia de la HCE (IA) y armar checklist">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="G2" name="¿Completitud = 100%?">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="M1" name="Completar solo lo faltante (in-basket, 1 clic)">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:businessRuleTask id="B4" name="Puntuar necesidad médica y riesgo de negación">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:exclusiveGateway id="G3" name="¿Riesgo alto / alto costo?">
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="C1" name="Revisión clínica del caso">
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+      <bpmn:outgoing>Flow_11</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="B5" name="Radicar vía adaptador del pagador (API / RPA)">
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+      <bpmn:incoming>Flow_12</bpmn:incoming>
+      <bpmn:outgoing>Flow_13</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:task id="P1" name="Decidir solicitud">
+      <bpmn:incoming>Flow_13</bpmn:incoming>
+      <bpmn:outgoing>Flow_14</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:receiveTask id="B6" name="Monitorear estado (webhook / RPA) y SLA">
+      <bpmn:incoming>Flow_14</bpmn:incoming>
+      <bpmn:incoming>Flow_17</bpmn:incoming>
+      <bpmn:outgoing>Flow_15</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:exclusiveGateway id="G4" name="¿Resultado?">
+      <bpmn:incoming>Flow_15</bpmn:incoming>
+      <bpmn:outgoing>Flow_16</bpmn:outgoing>
+      <bpmn:outgoing>Flow_18</bpmn:outgoing>
+      <bpmn:outgoing>Flow_21</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="C2" name="Escalar con el pagador (SLA vencido)">
+      <bpmn:incoming>Flow_16</bpmn:incoming>
+      <bpmn:outgoing>Flow_17</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="B7" name="Notificar y autoagendar">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:incoming>Flow_18</bpmn:incoming>
+      <bpmn:incoming>Flow_26</bpmn:incoming>
+      <bpmn:outgoing>Flow_19</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:task id="N1" name="Recibir cita y recordatorios">
+      <bpmn:incoming>Flow_19</bpmn:incoming>
+      <bpmn:outgoing>Flow_20</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="E1" name="Servicio prestado">
+      <bpmn:incoming>Flow_20</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="B8" name="Clasificar motivo y calcular valor esperado de apelar">
+      <bpmn:incoming>Flow_21</bpmn:incoming>
+      <bpmn:outgoing>Flow_22</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="B9" name="Redactar apelación con evidencia (IA)">
+      <bpmn:incoming>Flow_22</bpmn:incoming>
+      <bpmn:outgoing>Flow_23</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="C3" name="Validar y firmar apelación">
+      <bpmn:incoming>Flow_23</bpmn:incoming>
+      <bpmn:outgoing>Flow_24</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:task id="P2" name="Revisar apelación">
+      <bpmn:incoming>Flow_24</bpmn:incoming>
+      <bpmn:outgoing>Flow_25</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="G5" name="¿Revocada?">
+      <bpmn:incoming>Flow_25</bpmn:incoming>
+      <bpmn:outgoing>Flow_26</bpmn:outgoing>
+      <bpmn:outgoing>Flow_27</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="C4" name="Preparar expediente de tutela con el paciente">
+      <bpmn:incoming>Flow_27</bpmn:incoming>
+      <bpmn:outgoing>Flow_28</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="E2" name="Tutela acompañada">
+      <bpmn:incoming>Flow_28</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0" sourceRef="S" targetRef="B1" />
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="B1" targetRef="B2" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="B2" targetRef="G1" />
+    <bpmn:sequenceFlow id="Flow_3" name="No" sourceRef="G1" targetRef="B7" />
+    <bpmn:sequenceFlow id="Flow_4" name="Sí" sourceRef="G1" targetRef="B3" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="B3" targetRef="G2" />
+    <bpmn:sequenceFlow id="Flow_6" name="No" sourceRef="G2" targetRef="M1" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="M1" targetRef="B3" />
+    <bpmn:sequenceFlow id="Flow_8" name="Sí" sourceRef="G2" targetRef="B4" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="B4" targetRef="G3" />
+    <bpmn:sequenceFlow id="Flow_10" name="Sí" sourceRef="G3" targetRef="C1" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="C1" targetRef="B5" />
+    <bpmn:sequenceFlow id="Flow_12" name="No" sourceRef="G3" targetRef="B5" />
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="B5" targetRef="P1" />
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="P1" targetRef="B6" />
+    <bpmn:sequenceFlow id="Flow_15" sourceRef="B6" targetRef="G4" />
+    <bpmn:sequenceFlow id="Flow_16" name="SLA vencido" sourceRef="G4" targetRef="C2" />
+    <bpmn:sequenceFlow id="Flow_17" sourceRef="C2" targetRef="B6" />
+    <bpmn:sequenceFlow id="Flow_18" name="Aprobada" sourceRef="G4" targetRef="B7" />
+    <bpmn:sequenceFlow id="Flow_19" sourceRef="B7" targetRef="N1" />
+    <bpmn:sequenceFlow id="Flow_20" sourceRef="N1" targetRef="E1" />
+    <bpmn:sequenceFlow id="Flow_21" name="Negada" sourceRef="G4" targetRef="B8" />
+    <bpmn:sequenceFlow id="Flow_22" name="Valor esperado &gt; umbral" sourceRef="B8" targetRef="B9" />
+    <bpmn:sequenceFlow id="Flow_23" sourceRef="B9" targetRef="C3" />
+    <bpmn:sequenceFlow id="Flow_24" sourceRef="C3" targetRef="P2" />
+    <bpmn:sequenceFlow id="Flow_25" sourceRef="P2" targetRef="G5" />
+    <bpmn:sequenceFlow id="Flow_26" name="Sí" sourceRef="G5" targetRef="B7" />
+    <bpmn:sequenceFlow id="Flow_27" name="No" sourceRef="G5" targetRef="C4" />
+    <bpmn:sequenceFlow id="Flow_28" sourceRef="C4" targetRef="E2" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_to_be">
+    <bpmndi:BPMNPlane id="Plane_to_be" bpmnElement="Collab_to_be">
+      <bpmndi:BPMNShape id="Pool_to_be_di" bpmnElement="Pool_to_be" isHorizontal="true"><dc:Bounds x="120" y="40" width="2810" height="720" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_med_di" bpmnElement="L_med" isHorizontal="true"><dc:Bounds x="150" y="40" width="2780" height="120" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_plat_di" bpmnElement="L_plat" isHorizontal="true"><dc:Bounds x="150" y="160" width="2780" height="240" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_coord_di" bpmnElement="L_coord" isHorizontal="true"><dc:Bounds x="150" y="400" width="2780" height="120" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_pag_di" bpmnElement="L_pag" isHorizontal="true"><dc:Bounds x="150" y="520" width="2780" height="120" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_pac_di" bpmnElement="L_pac" isHorizontal="true"><dc:Bounds x="150" y="640" width="2780" height="120" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_di" bpmnElement="S"><dc:Bounds x="232" y="82" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B1_di" bpmnElement="B1"><dc:Bounds x="350" y="184" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B2_di" bpmnElement="B2"><dc:Bounds x="510" y="184" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G1_di" bpmnElement="G1" isMarkerVisible="true"><dc:Bounds x="705" y="195" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B3_di" bpmnElement="B3"><dc:Bounds x="830" y="184" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G2_di" bpmnElement="G2" isMarkerVisible="true"><dc:Bounds x="1025" y="195" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="M1_di" bpmnElement="M1"><dc:Bounds x="990" y="64" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B4_di" bpmnElement="B4"><dc:Bounds x="1150" y="184" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G3_di" bpmnElement="G3" isMarkerVisible="true"><dc:Bounds x="1345" y="195" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="C1_di" bpmnElement="C1"><dc:Bounds x="1310" y="424" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B5_di" bpmnElement="B5"><dc:Bounds x="1470" y="184" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="P1_di" bpmnElement="P1"><dc:Bounds x="1630" y="544" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B6_di" bpmnElement="B6"><dc:Bounds x="1630" y="304" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G4_di" bpmnElement="G4" isMarkerVisible="true"><dc:Bounds x="1825" y="315" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="C2_di" bpmnElement="C2"><dc:Bounds x="1790" y="424" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B7_di" bpmnElement="B7"><dc:Bounds x="2270" y="184" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="N1_di" bpmnElement="N1"><dc:Bounds x="2430" y="664" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E1_di" bpmnElement="E1"><dc:Bounds x="2632" y="682" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B8_di" bpmnElement="B8"><dc:Bounds x="1950" y="304" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B9_di" bpmnElement="B9"><dc:Bounds x="2110" y="304" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="C3_di" bpmnElement="C3"><dc:Bounds x="2110" y="424" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="P2_di" bpmnElement="P2"><dc:Bounds x="2270" y="544" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G5_di" bpmnElement="G5" isMarkerVisible="true"><dc:Bounds x="2465" y="555" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="C4_di" bpmnElement="C4"><dc:Bounds x="2590" y="424" width="120" height="72" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E2_di" bpmnElement="E2"><dc:Bounds x="2792" y="442" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0_di" bpmnElement="Flow_0">
+        <di:waypoint x="268" y="100" />
+        <di:waypoint x="309" y="100" />
+        <di:waypoint x="309" y="220" />
+        <di:waypoint x="350" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="470" y="220" />
+        <di:waypoint x="510" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="630" y="220" />
+        <di:waypoint x="705" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="755" y="220" />
+        <di:waypoint x="2270" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="755" y="220" />
+        <di:waypoint x="830" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="950" y="220" />
+        <di:waypoint x="1025" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="1050" y="195" />
+        <di:waypoint x="1050" y="136" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="1050" y="64" />
+        <di:waypoint x="1050" y="42" />
+        <di:waypoint x="890" y="42" />
+        <di:waypoint x="890" y="184" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="1075" y="220" />
+        <di:waypoint x="1150" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="1270" y="220" />
+        <di:waypoint x="1345" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10">
+        <di:waypoint x="1370" y="245" />
+        <di:waypoint x="1370" y="424" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11">
+        <di:waypoint x="1430" y="460" />
+        <di:waypoint x="1450" y="460" />
+        <di:waypoint x="1450" y="220" />
+        <di:waypoint x="1470" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12">
+        <di:waypoint x="1395" y="220" />
+        <di:waypoint x="1470" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13_di" bpmnElement="Flow_13">
+        <di:waypoint x="1590" y="220" />
+        <di:waypoint x="1610" y="220" />
+        <di:waypoint x="1610" y="580" />
+        <di:waypoint x="1630" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14_di" bpmnElement="Flow_14">
+        <di:waypoint x="1690" y="544" />
+        <di:waypoint x="1690" y="376" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15_di" bpmnElement="Flow_15">
+        <di:waypoint x="1750" y="340" />
+        <di:waypoint x="1825" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16_di" bpmnElement="Flow_16">
+        <di:waypoint x="1850" y="365" />
+        <di:waypoint x="1850" y="424" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17_di" bpmnElement="Flow_17">
+        <di:waypoint x="1850" y="424" />
+        <di:waypoint x="1850" y="282" />
+        <di:waypoint x="1690" y="282" />
+        <di:waypoint x="1690" y="304" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_18_di" bpmnElement="Flow_18">
+        <di:waypoint x="1875" y="340" />
+        <di:waypoint x="2072" y="340" />
+        <di:waypoint x="2072" y="220" />
+        <di:waypoint x="2270" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19_di" bpmnElement="Flow_19">
+        <di:waypoint x="2390" y="220" />
+        <di:waypoint x="2410" y="220" />
+        <di:waypoint x="2410" y="700" />
+        <di:waypoint x="2430" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_20_di" bpmnElement="Flow_20">
+        <di:waypoint x="2550" y="700" />
+        <di:waypoint x="2632" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_21_di" bpmnElement="Flow_21">
+        <di:waypoint x="1875" y="340" />
+        <di:waypoint x="1950" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_22_di" bpmnElement="Flow_22">
+        <di:waypoint x="2070" y="340" />
+        <di:waypoint x="2110" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_23_di" bpmnElement="Flow_23">
+        <di:waypoint x="2170" y="376" />
+        <di:waypoint x="2170" y="424" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_24_di" bpmnElement="Flow_24">
+        <di:waypoint x="2230" y="460" />
+        <di:waypoint x="2250" y="460" />
+        <di:waypoint x="2250" y="580" />
+        <di:waypoint x="2270" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_25_di" bpmnElement="Flow_25">
+        <di:waypoint x="2390" y="580" />
+        <di:waypoint x="2465" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_26_di" bpmnElement="Flow_26">
+        <di:waypoint x="2490" y="555" />
+        <di:waypoint x="2490" y="162" />
+        <di:waypoint x="2330" y="162" />
+        <di:waypoint x="2330" y="184" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_27_di" bpmnElement="Flow_27">
+        <di:waypoint x="2515" y="580" />
+        <di:waypoint x="2552" y="580" />
+        <di:waypoint x="2552" y="460" />
+        <di:waypoint x="2590" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_28_di" bpmnElement="Flow_28">
+        <di:waypoint x="2710" y="460" />
+        <di:waypoint x="2792" y="460" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
