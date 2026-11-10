@@ -23,7 +23,9 @@ Propuesta de rediseño del proceso de autorización de servicios médicos de la 
 
 ## MVP
 
-Prototipo funcional en [`../app`](../app) (React + TypeScript + Vite):
+**Demo en línea:** https://niagara-autoriza.jairoamayac.workers.dev (Cloudflare Workers, datos sintéticos)
+
+Prototipo funcional en [`../app`](../app) (React + TypeScript + Vite). Pruebas del dominio: `npm test`. Despliegue: `npm run deploy`.
 
 ```bash
 cd app && npm install && npm run dev
