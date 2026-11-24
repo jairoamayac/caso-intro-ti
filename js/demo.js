@@ -153,6 +153,7 @@
         if (c.estado === 'rechazada_apel') {
           s.estado = 'rechazada';
           s.apelacion.resultado = 'rechazada';
+          s.apelacion.justificacion = c.justAp;
           s.rechazoFinal = { tipo: 'Apelación rechazada', justificacion: c.justAp, fecha: iso(fr + 8) };
           h(fr + 8, 'Apelación rechazada: ' + c.justAp);
         }

@@ -177,11 +177,14 @@
       <div class="card">
         <h3>1 · Verificar paciente</h3>
         <div class="row-input">
-          <input class="input" id="c-pid" placeholder="ID del paciente">
+          <input class="input" id="c-pid" placeholder="Escriba o elija el ID del paciente" list="c-ids" autocomplete="off">
+          <datalist id="c-ids">${Object.values(S.state.carpetas).map((c) => `<option value="${esc(c.pacienteId)}">${esc(c.paciente)}</option>`).join('')}</datalist>
           <button class="btn btn-dark" id="c-buscar">Verificar</button>
         </div>
-        <div id="c-verif" style="margin-top:12px"></div>
-        <form id="f-carga" hidden>
+        <div id="c-verif" style="margin-top:12px">${Object.keys(S.state.carpetas).length
+          ? `<p class="note">Pacientes registrados (clic para elegir):</p><div class="chips" style="margin-top:6px">${Object.values(S.state.carpetas).slice(0, 12).map((c) => `<button type="button" class="tag tag-btn" data-pick="${esc(c.pacienteId)}">${esc(c.pacienteId)} · ${esc(c.paciente)}</button>`).join('')}</div>`
+          : `<div class="banner t-amber">Aún no hay pacientes registrados. Primero registre uno en <a class="link" href="#/registro">Registro</a> para crear su carpeta.</div>`}</div>
+        <form id="f-carga"><fieldset id="c-fs" disabled>
           <h3 style="margin-top:22px">2 · Profesional que carga</h3>
           <div class="grid g3">
             <div class="field"><label>ID del profesional *</label><input class="input" name="profId" required></div>
@@ -194,7 +197,7 @@
             <b>Arrastre los archivos aquí</b><span>o haga clic para seleccionarlos (PDF, imágenes, documentos)</span></label>
           <ul class="filelist" id="c-sel"></ul>
           <button class="btn btn-blue btn-lg" type="submit" style="margin-top:14px">Cargar a la historia clínica</button>
-        </form>
+        </fieldset><p class="note" id="c-hint" style="margin-top:10px">Verifique el ID del paciente para habilitar la carga.</p></form>
       </div>
       <div class="grid" style="align-content:start">
         <div class="card"><h3>Mensajes de coordinadores <span class="pill t-amber" id="c-nmsg">0</span></h3><div id="c-msgs" class="list"></div></div>
@@ -226,8 +229,11 @@
       const c = S.state.carpetas[v];
       if (!c) {
         pid = null;
-        $('#f-carga').hidden = true;
-        $('#c-verif').innerHTML = `<div class="banner t-red">No existe una carpeta con el ID <b>${esc(v)}</b>. El paciente debe registrarse primero en la ventana de Registro.</div>`;
+        $('#c-fs').disabled = true;
+        $('#c-hint').hidden = false;
+        $('#c-verif').innerHTML = v
+          ? `<div class="banner t-red">No existe una carpeta con el ID <b>${esc(v)}</b>. Revise el número o registre primero al paciente. <a class="btn btn-sm btn-blue" href="#/registro" style="margin-left:6px">Ir a Registro</a></div>`
+          : `<div class="banner t-amber">Escriba el ID del paciente.</div>`;
         pintarMensajes();
         return;
       }
@@ -236,11 +242,14 @@
       const reqs = [...new Set(sols.flatMap((s) => s.requisitos.filter((r) => !r.cumplido).map((r) => r.texto)))];
       $('#c-req').innerHTML = `<option value="">— Ninguno / otro documento —</option>` + reqs.map((r) => `<option>${esc(r)}</option>`).join('');
       $('#c-verif').innerHTML = `<div class="banner t-green">Carpeta encontrada: <b>${esc(c.paciente)}</b> · ID ${esc(pid)} · ${sols.length} solicitud(es) activa(s)${reqs.length ? ` · faltan: ${reqs.map(esc).join(', ')}` : ''}</div>`;
-      $('#f-carga').hidden = false;
+      $('#c-fs').disabled = false;
+      $('#c-hint').hidden = true;
       pintarMensajes();
       pintarArchivos();
     };
     $('#c-buscar').onclick = verificar;
+    $('#c-pid').onchange = () => S.state.carpetas[$('#c-pid').value.trim()] && verificar();
+    document.querySelectorAll('[data-pick]').forEach((b) => (b.onclick = () => (($('#c-pid').value = b.dataset.pick), verificar())));
     $('#c-pid').onkeydown = (e) => e.key === 'Enter' && verificar();
 
     const pintarSel = () => ($('#c-sel').innerHTML = elegidos.map((f) => `<li>${esc(f.name)} <span>${kb(f.size)}</span></li>`).join(''));
@@ -248,7 +257,7 @@
     const drop = $('#c-drop');
     drop.ondragover = (e) => (e.preventDefault(), drop.classList.add('over'));
     drop.ondragleave = () => drop.classList.remove('over');
-    drop.ondrop = (e) => (e.preventDefault(), drop.classList.remove('over'), (elegidos = [...e.dataTransfer.files]), pintarSel());
+    drop.ondrop = (e) => (e.preventDefault(), drop.classList.remove('over'), pid && (elegidos = [...e.dataTransfer.files]), pintarSel());
 
     $('#f-carga').onsubmit = async (e) => {
       e.preventDefault();
@@ -426,7 +435,7 @@
     const lista = S.state.solicitudes.filter((s) => s.estado === actual[2]);
     let tabla = '';
     if (hoja === 'aprobadas')
-      tabla = tablaHoja(lista, ['Aprobada', 'Vía'], (s) => [fecha(s.aprobada), s.aprobadaVia || 'Aseguradora']);
+      tabla = tablaHoja(lista, ['Aprobada', 'Vía', 'Justificación'], (s) => [fecha(s.aprobada), s.aprobadaVia || 'Aseguradora', esc((s.apelacion && s.apelacion.justificacion) || '—')]);
     if (hoja === 'revision')
       tabla = tablaHoja(lista, ['Fecha de rechazo', 'Razón', 'Límite carta', 'Acciones'], (s) => [
         fecha(s.rechazo.fecha), esc(s.rechazo.razon), `${fecha(s.rechazo.limite)}<div class="sub">${diasRestantes(s.rechazo.limite)}</div>`,
@@ -435,7 +444,8 @@
     if (hoja === 'apelaciones')
       tabla = tablaHoja(lista, ['Razón del rechazo', 'Carta recibida', 'Resultado de la apelación'], (s) => [
         esc(s.rechazo.razon), fecha(s.apelacion.fecha) + (s.apelacion.archivoId ? ' 📎' : ''),
-        `<button class="btn btn-green btn-sm" data-ap-ok="${s.id}">Aprobada</button> <button class="btn btn-danger btn-sm" data-ap-no="${s.id}">Rechazada</button>`,
+        `<div class="ap-box"><textarea class="input" rows="2" id="just-${s.id}" placeholder="Justificación de la decisión (obligatoria)"></textarea>
+          <div class="actions"><button class="btn btn-green btn-sm" data-ap-ok="${s.id}">✓ Aprobar</button> <button class="btn btn-danger btn-sm" data-ap-no="${s.id}">✕ Rechazar</button></div></div>`,
       ], true);
     if (hoja === 'rechazos')
       tabla = tablaHoja(lista, ['Tipo', 'Justificación', 'Fecha'], (s) => [`<span class="pill t-red">${esc(s.rechazoFinal.tipo)}</span>`, esc(s.rechazoFinal.justificacion), fecha(s.rechazoFinal.fecha)]);
@@ -550,22 +560,35 @@
       await guardar(`${id} descartada`);
       render();
     });
+    const justificacion = (id) => {
+      const el = document.getElementById('just-' + id);
+      const j = el.value.trim();
+      if (!j) {
+        toast('Escriba la justificación de la decisión', 'error');
+        el.focus();
+      }
+      return j;
+    };
     on('data-ap-ok', async (id) => {
+      const j = justificacion(id);
+      if (!j) return;
       const s = sol(id);
+      s.apelacion.justificacion = j;
       Object.assign(s, { estado: 'aprobada', aprobada: new Date().toISOString(), aprobadaVia: 'Apelación' });
       s.apelacion.resultado = 'aprobada';
-      hist(s, 'Apelación aprobada');
-      notificar(s, 'Paciente', `Su apelación fue APROBADA. El tratamiento ${s.tratamiento} quedó autorizado.`);
+      hist(s, 'Apelación aprobada: ' + j);
+      notificar(s, 'Paciente', `Su apelación fue APROBADA. El tratamiento ${s.tratamiento} quedó autorizado. Justificación: ${j}`);
       notificar(s, 'Coordinador general', `Apelación de ${s.id} (${s.paciente.nombre}) aprobada.`);
       await guardar(`${id} aprobada por apelación`);
       render();
     });
     on('data-ap-no', async (id) => {
-      const j = prompt('Justificación del rechazo de la apelación:');
+      const j = justificacion(id);
       if (!j) return;
       const s = sol(id);
       s.estado = 'rechazada';
       s.apelacion.resultado = 'rechazada';
+      s.apelacion.justificacion = j;
       s.rechazoFinal = { tipo: 'Apelación rechazada', justificacion: j, fecha: new Date().toISOString() };
       hist(s, 'Apelación rechazada: ' + j);
       notificar(s, 'Paciente', `Su apelación fue rechazada. Justificación: ${j}`);

@@ -175,3 +175,10 @@ hr { border: 0; border-top: 2px solid var(--line); margin: 18px 0; }
   .side { position: static; height: auto; border-right: 0; border-bottom: 2px solid var(--line); }
   .main { padding: 20px; }
 }
+
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset:disabled { opacity: .5; }
+fieldset:disabled .drop { cursor: not-allowed; }
+.tag-btn { border: 2px solid #b7e6cd; cursor: pointer; font: inherit; font-size: 13px; font-weight: 700; }
+.tag-btn:hover { background: #c9f5df; }
+.ap-box { display: flex; flex-direction: column; gap: 8px; min-width: 260px; }
