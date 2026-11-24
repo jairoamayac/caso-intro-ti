@@ -6,6 +6,8 @@
   const fecha = (iso) => (iso ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso + 'T12:00' : iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
   const fechaHora = (iso) => (iso ? new Date(iso).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  /** ID sin espacios, puntos ni prefijo de tipo de documento: "CC 1.020.774.310" → "1020774310". */
+  const limpiarId = (t) => String(t).toUpperCase().trim().replace(/^(CC|TI|CE|RC|PA|NIT)[\s.:-]*/, '').replace(/[\s.]/g, '');
   const kb = (n) => (n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.ceil(n / 1024) + ' KB');
 
   const EPS = ['Nueva EPS', 'EPS Sura', 'Sanitas', 'Compensar', 'Famisanar', 'Salud Total', 'Coosalud', 'Mutual Ser', 'Colsanitas (Prepagada)', 'Medisanitas (Prepagada)', 'Sura Prepagada', 'Coomeva Prepagada', 'Sisbén / Subsidiado', 'Particular'];
@@ -95,7 +97,7 @@
         <h3>Paciente</h3>
         <div class="grid g2">
           <div class="field"><label>Nombre del paciente *</label><input class="input" name="pNombre" required></div>
-          <div class="field"><label>ID del paciente (documento) *</label><input class="input" name="pId" required pattern="[A-Za-z0-9.\\-]+" placeholder="Ej. 1020774310"></div>
+          <div class="field"><label>ID del paciente (documento) *</label><input class="input" name="pId" required inputmode="numeric" autocomplete="off" placeholder="Ej. 1020774310 (solo el número)"></div>
           <div class="field"><label>EPS o aseguradora *</label>
             <select class="input" name="eps" required><option value="">Seleccione…</option>${EPS.map((e) => `<option>${e}</option>`).join('')}</select></div>
           <div class="field"><label>Correo del paciente (para notificar)</label><input class="input" name="pCorreo" type="email" placeholder="opcional"></div>
@@ -134,7 +136,9 @@
       const d = Object.fromEntries(new FormData(f));
       const requisitos = d.requisitos.split('\n').map((x) => x.trim()).filter(Boolean);
       if (!requisitos.length) return toast('Escriba al menos un requerimiento', 'error');
-      const pid = d.pId.trim();
+      // ID limpio: sin espacios, puntos ni prefijos tipo "CC" (1.020.774.310 → 1020774310)
+      const pid = limpiarId(d.pId);
+      if (!pid) return toast('Escriba el ID del paciente', 'error');
       const btn = f.querySelector('button[type=submit]');
       btn.disabled = true;
       try {
@@ -226,7 +230,7 @@
     const norm = (t) => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
     // lista de resultados mientras se escribe (por ID o por nombre)
     const buscar = () => {
-      const q = norm($('#c-pid').value.trim());
+      const q = norm($('#c-pid').value.trim()).replace(/\./g, '');
       const todas = carpetas();
       if (!todas.length) {
         $('#c-res').innerHTML = `<div class="banner t-amber">Aún no hay pacientes registrados. Primero registre uno en <a class="link" href="#/registro">Registro</a> para crear su carpeta.</div>`;
@@ -272,7 +276,7 @@
     // compatibilidad con "Atender" de los mensajes
     const verificar = () => {
       const v = $('#c-pid').value.trim();
-      if (S.state.carpetas[v]) return elegir(v);
+      if (S.state.carpetas[limpiarId(v)]) return elegir(limpiarId(v));
       const q = norm(v);
       const hits = carpetas().filter((c) => norm(c.pacienteId + ' ' + c.paciente).includes(q));
       if (v && hits.length === 1) return elegir(hits[0].pacienteId);
@@ -282,7 +286,8 @@
     $('#c-buscar').onclick = verificar;
     $('#c-pid').oninput = () => {
       if (pid) limpiar(); // al reescribir se suelta el paciente elegido
-      if (S.state.carpetas[$('#c-pid').value.trim()]) return elegir($('#c-pid').value.trim());
+      const id = limpiarId($('#c-pid').value);
+      if (S.state.carpetas[id]) return elegir(id);
       buscar();
     };
     $('#c-pid').onkeydown = (e) => e.key === 'Enter' && verificar();
