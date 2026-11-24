@@ -1,0 +1,6 @@
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "niagara-autoriza",
+  "compatibility_date": "2026-11-24",
+  "assets": { "directory": "./" }
+}
