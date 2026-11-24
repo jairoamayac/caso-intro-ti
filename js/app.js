@@ -175,15 +175,13 @@
     <p>La especialidad carga los documentos en la historia clínica del paciente. Primero se verifica que exista la carpeta.</p></div></div>
     <div class="grid g-main">
       <div class="card">
-        <h3>1 · Verificar paciente</h3>
+        <h3>1 · Buscar paciente</h3>
         <div class="row-input">
-          <input class="input" id="c-pid" placeholder="Escriba o elija el ID del paciente" list="c-ids" autocomplete="off">
-          <datalist id="c-ids">${Object.values(S.state.carpetas).map((c) => `<option value="${esc(c.pacienteId)}">${esc(c.paciente)}</option>`).join('')}</datalist>
-          <button class="btn btn-dark" id="c-buscar">Verificar</button>
+          <input class="input" id="c-pid" placeholder="Escriba el ID o el nombre del paciente" autocomplete="off">
+          <button class="btn btn-dark" id="c-buscar">Buscar</button>
         </div>
-        <div id="c-verif" style="margin-top:12px">${Object.keys(S.state.carpetas).length
-          ? `<p class="note">Pacientes registrados (clic para elegir):</p><div class="chips" style="margin-top:6px">${Object.values(S.state.carpetas).slice(0, 12).map((c) => `<button type="button" class="tag tag-btn" data-pick="${esc(c.pacienteId)}">${esc(c.pacienteId)} · ${esc(c.paciente)}</button>`).join('')}</div>`
-          : `<div class="banner t-amber">Aún no hay pacientes registrados. Primero registre uno en <a class="link" href="#/registro">Registro</a> para crear su carpeta.</div>`}</div>
+        <div id="c-res" class="results"></div>
+        <div id="c-verif" style="margin-top:12px"></div>
         <form id="f-carga"><fieldset id="c-fs" disabled>
           <h3 style="margin-top:22px">2 · Profesional que carga</h3>
           <div class="grid g3">
@@ -224,33 +222,71 @@
       $('#c-files-list').innerHTML = c && c.archivos.length ? c.archivos.map(filaArchivo).join('') : '<div class="empty">La carpeta está vacía.</div>';
       enlazarArchivos($('#c-files-list'));
     };
-    const verificar = () => {
-      const v = $('#c-pid').value.trim();
-      const c = S.state.carpetas[v];
-      if (!c) {
-        pid = null;
-        $('#c-fs').disabled = true;
-        $('#c-hint').hidden = false;
-        $('#c-verif').innerHTML = v
-          ? `<div class="banner t-red">No existe una carpeta con el ID <b>${esc(v)}</b>. Revise el número o registre primero al paciente. <a class="btn btn-sm btn-blue" href="#/registro" style="margin-left:6px">Ir a Registro</a></div>`
-          : `<div class="banner t-amber">Escriba el ID del paciente.</div>`;
-        pintarMensajes();
+    const carpetas = () => Object.values(S.state.carpetas);
+    const norm = (t) => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    // lista de resultados mientras se escribe (por ID o por nombre)
+    const buscar = () => {
+      const q = norm($('#c-pid').value.trim());
+      const todas = carpetas();
+      if (!todas.length) {
+        $('#c-res').innerHTML = `<div class="banner t-amber">Aún no hay pacientes registrados. Primero registre uno en <a class="link" href="#/registro">Registro</a> para crear su carpeta.</div>`;
         return;
       }
-      pid = v;
+      const lista = q ? todas.filter((c) => norm(c.pacienteId + ' ' + c.paciente).includes(q)) : todas;
+      $('#c-res').innerHTML = lista.length
+        ? `<p class="note">${q ? `${lista.length} resultado(s)` : 'Pacientes registrados'} · clic para elegir</p><div class="list">${lista.slice(0, 8).map((c) =>
+            `<button type="button" class="item result" data-pick="${esc(c.pacienteId)}"><b>${esc(c.paciente)}</b><span>ID ${esc(c.pacienteId)} · ${c.archivos.length} archivo(s)</span></button>`).join('')}</div>`
+        : `<div class="banner t-red">No hay ningún paciente con “${esc($('#c-pid').value.trim())}”. Revise el dato o registre primero al paciente. <a class="btn btn-sm btn-blue" href="#/registro" style="margin-left:6px">Ir a Registro</a></div>`;
+      $('#c-res').querySelectorAll('[data-pick]').forEach((b) => (b.onclick = () => elegir(b.dataset.pick)));
+    };
+    const limpiar = () => {
+      pid = null;
+      $('#c-fs').disabled = true;
+      $('#c-hint').hidden = false;
+      $('#c-verif').innerHTML = '';
+      $('#c-files-list').innerHTML = '<div class="empty">Elija un paciente.</div>';
+      pintarMensajes();
+    };
+    const elegir = (id) => {
+      const c = S.state.carpetas[id];
+      if (!c) return;
+      pid = id;
+      $('#c-pid').value = id;
+      $('#c-res').innerHTML = '';
       const sols = S.state.solicitudes.filter((s) => s.paciente.id === pid && !['aprobada', 'rechazada'].includes(s.estado));
       const reqs = [...new Set(sols.flatMap((s) => s.requisitos.filter((r) => !r.cumplido).map((r) => r.texto)))];
       $('#c-req').innerHTML = `<option value="">— Ninguno / otro documento —</option>` + reqs.map((r) => `<option>${esc(r)}</option>`).join('');
-      $('#c-verif').innerHTML = `<div class="banner t-green">Carpeta encontrada: <b>${esc(c.paciente)}</b> · ID ${esc(pid)} · ${sols.length} solicitud(es) activa(s)${reqs.length ? ` · faltan: ${reqs.map(esc).join(', ')}` : ''}</div>`;
+      $('#c-verif').innerHTML = `<div class="banner t-green chosen"><div><b>${esc(c.paciente)}</b> · ID ${esc(pid)}<br><small>${sols.length} solicitud(es) activa(s)${reqs.length ? ` · faltan: ${reqs.map(esc).join(', ')}` : ''}</small></div>
+        <button type="button" class="btn btn-ghost btn-sm" id="c-cambiar">Cambiar paciente</button></div>`;
+      $('#c-cambiar').onclick = () => {
+        $('#c-pid').value = '';
+        limpiar();
+        buscar();
+        $('#c-pid').focus();
+      };
       $('#c-fs').disabled = false;
       $('#c-hint').hidden = true;
       pintarMensajes();
       pintarArchivos();
     };
+    // compatibilidad con "Atender" de los mensajes
+    const verificar = () => {
+      const v = $('#c-pid').value.trim();
+      if (S.state.carpetas[v]) return elegir(v);
+      const q = norm(v);
+      const hits = carpetas().filter((c) => norm(c.pacienteId + ' ' + c.paciente).includes(q));
+      if (v && hits.length === 1) return elegir(hits[0].pacienteId);
+      limpiar();
+      buscar();
+    };
     $('#c-buscar').onclick = verificar;
-    $('#c-pid').onchange = () => S.state.carpetas[$('#c-pid').value.trim()] && verificar();
-    document.querySelectorAll('[data-pick]').forEach((b) => (b.onclick = () => (($('#c-pid').value = b.dataset.pick), verificar())));
+    $('#c-pid').oninput = () => {
+      if (pid) limpiar(); // al reescribir se suelta el paciente elegido
+      if (S.state.carpetas[$('#c-pid').value.trim()]) return elegir($('#c-pid').value.trim());
+      buscar();
+    };
     $('#c-pid').onkeydown = (e) => e.key === 'Enter' && verificar();
+    buscar();
 
     const pintarSel = () => ($('#c-sel').innerHTML = elegidos.map((f) => `<li>${esc(f.name)} <span>${kb(f.size)}</span></li>`).join(''));
     $('#c-files').onchange = (e) => ((elegidos = [...e.target.files]), pintarSel());
